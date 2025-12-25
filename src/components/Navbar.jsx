@@ -1,8 +1,9 @@
 import React from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import axios from 'axios';
-import { removeUser } from '../utils/userSlice.js.jsx';
-import { BASE_URL } from '../utils/constants.js';
+import { removeUser } from '../utils/userSlice.jsx';
+import { BASE_URL } from '../utils/constants.jsx';
+import { Link } from 'react-router-dom';
 
 const Navbar = () => {
   const currentUser = useSelector((store) => store.user.currentUser);
@@ -49,10 +50,10 @@ const Navbar = () => {
       className="menu menu-sm dropdown-content mt-3 w-52 rounded-box bg-base-100 p-2 shadow z-[100]"
     >
       <li>
-        <a className="justify-between">
+        <Link to="/profile" className="justify-between">
           Profile
           <span className="badge badge-primary badge-sm">New</span>
-        </a>
+        </Link>
       </li>
       <li><a>Settings</a></li>
       <li>
