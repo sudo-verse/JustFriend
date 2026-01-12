@@ -3,17 +3,20 @@ import { useSelector, useDispatch } from 'react-redux'
 import axios from 'axios';
 import { removeUser } from '../utils/userSlice.jsx';
 import { BASE_URL } from '../utils/constants.jsx';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
   const currentUser = useSelector((store) => store.user.currentUser);
   const dispatch = useDispatch();
-  console.log(currentUser);
+  const navigate = useNavigate();
+  // console.log(currentUser);
   const handleLogout = () => {
     axios.delete(BASE_URL + '/logout', { withCredentials: true })
     .then((res) => {
-      console.log(res.data);
+      // console.log(res.data);
       dispatch(removeUser());
+      navigate('/login');
     })
     .catch((err) => {
       console.error(err);
@@ -22,8 +25,10 @@ const Navbar = () => {
   return (
     <div className="navbar bg-base-300 shadow-sm">
   <div className="flex-1">
-    <a className="btn btn-ghost text-xl">👫JustFriend</a>
-  </div>
+      <Link to="/feed" className="btn btn-ghost text-xl">
+  👫 JustFriend
+</Link>
+    </div>
   <div className="flex-none">
     
     {currentUser && (
@@ -38,7 +43,7 @@ const Navbar = () => {
         <div className="w-10 rounded-full">
           <img
             alt="User avatar"
-            src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
+            src={currentUser.photoUrl}
           />
         </div>
       </div>
@@ -55,7 +60,9 @@ const Navbar = () => {
           <span className="badge badge-primary badge-sm">New</span>
         </Link>
       </li>
-      <li><a>Settings</a></li>
+      <li><Link to="/connections" className="justify-between">
+          Connections
+        </Link></li>
       <li>
         <a onClick={handleLogout} className="text-error">
           Logout

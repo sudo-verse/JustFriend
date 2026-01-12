@@ -8,6 +8,7 @@ import { BASE_URL } from '../utils/constants.jsx';
 const Login = () => {
   const [email, setEmail] = useState("dev@gmail.com");
   const [password, setPassword] = useState("DevPass123!");
+  const [err, setErr] = useState(null);
   const dispatch  = useDispatch();
   const navigate = useNavigate();
   const handleSubmit = async(e) => {
@@ -17,10 +18,11 @@ const Login = () => {
         password
       },
     { withCredentials: true })
-    console.log(res.data);
+    // console.log(res.data);
     dispatch(addUser(res.data) );
-    navigate('/');
+    navigate('/feed');
     }catch(err){
+      setErr(err.response.data);
       console.error(err)
     }
   }
@@ -34,7 +36,7 @@ const Login = () => {
 
   <label className="label">Password</label>
   <input type="password" className="input" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-
+    <p className="text-red-500">{err}</p>
   <button className="btn btn-neutral mt-4" onClick={handleSubmit}>Login</button>
 </fieldset>
     </div>
