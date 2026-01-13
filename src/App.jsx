@@ -8,6 +8,7 @@ import Footer from './components/Footer.jsx'
 import { Provider } from 'react-redux'
 import appStore from './utils/appStore.jsx'
 import Connections from './components/Connections.jsx'
+import Requests from './components/Requests.jsx'
 
 const App = () => {
   return (
@@ -20,6 +21,10 @@ const App = () => {
         <Route path="/profile" element={<Profile/>}/>
         <Route path="/feed" element={<Feed/>}/>
         <Route path="/connections" element={<Connections/>}/>
+        <Route path="/requests" element={<Requests/>}/>
+        <Route path="*" element={<h1 className='text-center mt-10 text-3xl font-bold'>404 Not Found</h1>}/>
+        </Route>
+        <Route path="*" element={<Footer/>}>
         
         </Route>
       </Routes>
