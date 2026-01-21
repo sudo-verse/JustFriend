@@ -13,70 +13,61 @@ const Navbar = () => {
   // console.log(currentUser);
   const handleLogout = () => {
     axios.delete(BASE_URL + '/logout', { withCredentials: true })
-    .then((res) => {
-      // console.log(res.data);
-      dispatch(removeUser());
-      navigate('/login');
-    })
-    .catch((err) => {
-      console.error(err);
-    });
+      .then((res) => {
+        // console.log(res.data);
+        dispatch(removeUser());
+        navigate('/login');
+      })
+      .catch((err) => {
+        console.error(err);
+      });
   }
   return (
-    <div className="navbar bg-base-300 shadow-sm">
-  <div className="flex-1">
-      <Link to="/feed" className="btn btn-ghost text-xl">
-  👫 JustFriend
-</Link>
-    </div>
-  <div className="flex-none">
-    
-    {currentUser && (
-  <div className="dropdown dropdown-end mx-4">
-    {/* Trigger */}
-    <label tabIndex={0} className="flex items-center gap-3 cursor-pointer">
-      <p className="text-sm font-medium">
-        Welcome <span className="font-semibold">{currentUser.name}</span>
-      </p>
-
-      <div className="btn btn-ghost btn-circle avatar">
-        <div className="w-10 rounded-full">
-          <img
-            alt="User avatar"
-            src={currentUser.photoUrl}
-          />
-        </div>
-      </div>
-    </label>
-
-    {/* Dropdown Menu */}
-    <ul
-      tabIndex={0}
-      className="menu menu-sm dropdown-content mt-3 w-52 rounded-box bg-base-100 p-2 shadow z-[100]"
-    >
-      <li>
-        <Link to="/profile" className="justify-between">
-          Profile
-          <span className="badge badge-primary badge-sm">New</span>
+    <div className="navbar bg-base-100/90 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-base-300">
+      <div className="navbar-start">
+        <Link to="/feed" className="btn btn-ghost text-xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent font-bold">
+          👫 JustFriend
         </Link>
-      </li>
-      <li><Link to="/connections" className="justify-between">
-          Connections
-        </Link></li>
-        <li><Link to="/requests" className="justify-between">
-          Requests
-        </Link></li>
-      <li>
-        <a onClick={handleLogout} className="text-error">
-          Logout
-        </a>
-      </li>
-    </ul>
-  </div>
-)}
+      </div>
 
-  </div>
-</div>
+      {currentUser && (
+        <div className="navbar-center hidden lg:flex">
+          <ul className="menu menu-horizontal px-1 gap-2">
+            <li><Link to="/feed" className="font-medium hover:text-primary transition-colors">Feed</Link></li>
+            <li><Link to="/connections" className="font-medium hover:text-primary transition-colors">Connections</Link></li>
+            <li><Link to="/requests" className="font-medium hover:text-primary transition-colors">Requests</Link></li>
+          </ul>
+        </div>
+      )}
+
+      <div className="navbar-end gap-2">
+        {currentUser ? (
+          <div className="dropdown dropdown-end">
+            <label tabIndex={0} className="btn btn-ghost btn-circle avatar border border-base-300 hover:border-primary transition-all">
+              <div className="w-10 rounded-full">
+                <img alt="User avatar" src={currentUser.photoUrl} />
+              </div>
+            </label>
+            <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-200">
+              <li className="menu-title px-4 py-2 border-b border-base-200 mb-2">
+                <span className="text-xs opacity-50">Signed in as</span>
+                <span className="font-bold text-primary truncate block w-full">{currentUser.name}</span>
+              </li>
+              <li><Link to="/profile">Profile <span className="badge badge-primary badge-xs">New</span></Link></li>
+              <div className="divider my-1"></div>
+              {/* Mobile links shown in dropdown only */}
+              <li className="lg:hidden"><Link to="/feed">Feed</Link></li>
+              <li className="lg:hidden"><Link to="/connections">Connections</Link></li>
+              <li className="lg:hidden"><Link to="/requests">Requests</Link></li>
+              <div className="lg:hidden divider my-1"></div>
+              <li><button onClick={handleLogout} className="text-error hover:bg-error/10">Logout</button></li>
+            </ul>
+          </div>
+        ) : (
+          <Link to="/login" className="btn btn-primary btn-sm">Login</Link>
+        )}
+      </div>
+    </div>
   )
 }
 

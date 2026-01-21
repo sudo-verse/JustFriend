@@ -1,2 +1,11 @@
 @import "tailwindcss";
 @plugin "daisyui";
+
+@layer utilities {
+  .glass-card {
+    @apply bg-base-100/30 backdrop-blur-md border border-white/10 shadow-xl;
+  }
+  .glass-input {
+    @apply bg-base-100/50 backdrop-blur-sm border-white/20 focus:border-primary/50 focus:ring-0;
+  }
+}
