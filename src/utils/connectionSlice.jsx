@@ -3,11 +3,13 @@ import { createSlice } from "@reduxjs/toolkit";
 const connectionSlice = createSlice({
     name: "connections",
     initialState: [],
-    reducers:{
-        addConnection:(state,action)=>action.payload,
-        removeConnection:(state,action)=>null,
+    reducers: {
+        addConnection: (state, action) => action.payload,
+        removeConnection: () => {
+            return null;
+        },
     },
 });
 
-export const {addConnection,removeConnection} = connectionSlice.actions;
+export const { addConnection, removeConnection } = connectionSlice.actions;
 export default connectionSlice.reducer;

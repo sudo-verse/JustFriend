@@ -3,32 +3,75 @@ import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import { addUser } from '../utils/userSlice.jsx';
 import { useNavigate } from 'react-router-dom';
-import { BASE_URL } from '../utils/constants.jsx';
+import { BASE_URL, CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '../utils/constants.jsx';
 
 const Login = () => {
   const [email, setEmail] = useState("dev@gmail.com");
   const [password, setPassword] = useState("DevPass123!");
   const [name, setName] = useState("");
+  const [gender, setGender] = useState("");
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
 
   const [err, setErr] = useState(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const handleSubmit = async (e) => {
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    setErr(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
     try {
-      const res = await axios.post(BASE_URL + '/login', {
-        email,
-        password
-      },
-        { withCredentials: true })
-      // console.log(res.data);
-      dispatch(addUser(res.data));
-      navigate('/feed');
+      const res = await axios.post(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        formData
+      );
+      setPhotoUrl(res.data.secure_url);
+    } catch (error) {
+      console.error("Upload failed:", error);
+      setErr("Failed to upload image. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    try {
+      setErr(null); // Clear previous errors
+      if (isLogin) {
+        const res = await axios.post(BASE_URL + '/login', {
+          email,
+          password
+        }, { withCredentials: true });
+        dispatch(addUser(res.data));
+        navigate('/feed');
+      } else {
+        // Signup Logic
+        const res = await axios.post(BASE_URL + '/signup', {
+          name,
+          gender,
+          email,
+          password,
+          photoUrl // value from state
+        }, { withCredentials: true });
+
+        dispatch(addUser(res.data));
+        navigate('/profile');
+      }
     } catch (err) {
-      setErr(err.response.data);
-      console.error(err)
+      setErr(err.response?.data || "Something went wrong");
+      console.error(err);
     }
   }
+
   return (
     <div className='flex items-center justify-center min-h-[calc(100vh-4rem)] bg-base-300 relative overflow-hidden p-4'>
       {/* Background/Decor */}
@@ -42,7 +85,27 @@ const Login = () => {
 
           <div className="form-control gap-4">
             {!isLogin && (
-              <div>
+              <div className="flex flex-col gap-4">
+                {/* Profile Picture Upload */}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="relative group cursor-pointer w-24 h-24">
+                    <div className={`w-24 h-24 rounded-full overflow-hidden border-4 border-base-200 shadow-md ${uploading ? 'animate-pulse' : ''}`}>
+                      <img
+                        src={photoUrl || "https://via.placeholder.com/150"}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <label htmlFor="file-upload" className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                      </svg>
+                    </label>
+                    <input id="file-upload" type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                  </div>
+                  <span className="text-xs text-base-content/60">{uploading ? "Uploading..." : "Upload Profile Picture"}</span>
+                </div>
+
                 <label className="label">
                   <span className="label-text font-medium">Full Name</span>
                 </label>
@@ -52,6 +115,16 @@ const Login = () => {
                   className="input input-bordered w-full bg-base-100/50 focus:bg-base-100 transition-all font-medium"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                />
+                <label className="label">
+                  <span className="label-text font-medium">Gender</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Male"
+                  className="input input-bordered w-full bg-base-100/50 focus:bg-base-100 transition-all font-medium"
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
                 />
               </div>
             )}
@@ -84,8 +157,12 @@ const Login = () => {
 
             {err && <div className="text-error text-sm text-center font-medium mt-2">{err}</div>}
 
-            <button className="btn btn-primary w-full mt-6 shadow-lg shadow-primary/20" onClick={handleSubmit}>
-              {isLogin ? "Login to Account" : "Create Account"}
+            <button
+              className="btn btn-primary w-full mt-6 shadow-lg shadow-primary/20"
+              onClick={handleSubmit}
+              disabled={uploading}
+            >
+              {isLogin ? "Login to Account" : (uploading ? "Uploading Image..." : "Create Account")}
             </button>
 
             <div className="divider text-xs opacity-50 my-4">OR</div>

@@ -13,7 +13,7 @@ const Navbar = () => {
   // console.log(currentUser);
   const handleLogout = () => {
     axios.delete(BASE_URL + '/logout', { withCredentials: true })
-      .then((res) => {
+      .then(() => {
         // console.log(res.data);
         dispatch(removeUser());
         navigate('/login');
@@ -36,6 +36,8 @@ const Navbar = () => {
             <li><Link to="/feed" className="font-medium hover:text-primary transition-colors">Feed</Link></li>
             <li><Link to="/connections" className="font-medium hover:text-primary transition-colors">Connections</Link></li>
             <li><Link to="/requests" className="font-medium hover:text-primary transition-colors">Requests</Link></li>
+            <li><Link to="/premium" className="font-medium hover:text-primary transition-colors">Premium</Link></li>
+
           </ul>
         </div>
       )}
