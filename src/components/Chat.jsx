@@ -236,7 +236,7 @@ const Chat = () => {
                     />
                     <button
                         type="submit"
-                        className={`btn btn-circle btn-primary absolute right-1 transition-transform ${newMessage.trim() ? "scale-100" : "scale-90 opacity-80"}`}
+                        className={`btn btn-circle btn-primary absolute right-1 z-1 transition-transform ${newMessage.trim() ? "scale-100" : "scale-90 opacity-80"}`}
                         disabled={!newMessage.trim()}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 ml-0.5">

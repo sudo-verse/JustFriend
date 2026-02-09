@@ -10,7 +10,7 @@ const Login = () => {
   const [password, setPassword] = useState("DevPass123!");
   const [name, setName] = useState("");
   const [gender, setGender] = useState("");
-  const [photoUrl, setPhotoUrl] = useState("");
+  const [photoUrl, setPhotoUrl] = useState("https://www.pngall.com/wp-content/uploads/5/Profile-PNG-File.png");
   const [uploading, setUploading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
 
@@ -80,7 +80,7 @@ const Login = () => {
       <div className="card w-full max-w-md bg-base-100/40 backdrop-blur-xl shadow-2xl border border-white/10 relative z-10 animate-fade-in-up">
         <div className="card-body">
           <h2 className="card-title text-3xl font-bold text-center justify-center mb-6">
-            {isLogin ? "Welcome Back" : "Join JustFriend"}
+            {isLogin ? "Welcome Back" : "Join CampusVerse"}
           </h2>
 
           <div className="form-control gap-4">
@@ -119,13 +119,19 @@ const Login = () => {
                 <label className="label">
                   <span className="label-text font-medium">Gender</span>
                 </label>
-                <input
-                  type="text"
-                  placeholder="Male"
+                <select
                   className="input input-bordered w-full bg-base-100/50 focus:bg-base-100 transition-all font-medium"
                   value={gender}
                   onChange={(e) => setGender(e.target.value)}
-                />
+                >
+                  <option value="" disabled>
+                    Select Gender
+                  </option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+
               </div>
             )}
 

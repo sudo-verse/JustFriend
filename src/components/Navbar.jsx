@@ -26,7 +26,7 @@ const Navbar = () => {
     <div className="navbar bg-base-100/90 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-base-300">
       <div className="navbar-start">
         <Link to="/feed" className="btn btn-ghost text-xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent font-bold">
-          👫 JustFriend
+          👫 CampusVerse
         </Link>
       </div>
 
