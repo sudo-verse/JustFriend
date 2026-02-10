@@ -14,7 +14,7 @@ const Premium = () => {
         name: 'CampusVerse Premium',
         description: `${type.charAt(0).toUpperCase() + type.slice(1)} Membership`,
         order_id: orderId, // This is the order_id created in the backend
-        callback_url: 'http://localhost:3000/payment-success', // Your success URL
+        callback_url: 'https://campusverse.duckdns.org/payment-success', // Your success URL
         prefill: {
           name: 'User',
           email: 'user@example.com',

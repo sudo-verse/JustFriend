@@ -11,6 +11,7 @@ import Connections from './components/Connections.jsx'
 import Requests from './components/Requests.jsx'
 import Premium from './components/Premium.jsx'
 import Chat from './components/Chat.jsx'
+import PaymentSuccess from './components/PaymentSuccess.jsx'
 
 
 const App = () => {
@@ -28,6 +29,7 @@ const App = () => {
               <Route path="/requests" element={<Requests />} />
               <Route path="/premium" element={<Premium />} />
               <Route path="/chat/:id" element={<Chat />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="*" element={
                 <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
                   <span className="text-9xl mb-4">🤔</span>
