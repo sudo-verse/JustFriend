@@ -6,8 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { BASE_URL, CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '../utils/constants.jsx';
 
 const Login = () => {
-  const [email, setEmail] = useState("dev@gmail.com");
-  const [password, setPassword] = useState("DevPass123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [gender, setGender] = useState("");
   const [photoUrl, setPhotoUrl] = useState("https://www.pngall.com/wp-content/uploads/5/Profile-PNG-File.png");
