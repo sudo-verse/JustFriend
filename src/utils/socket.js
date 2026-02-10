@@ -1,12 +1,17 @@
 import { io } from "socket.io-client";
-import { BASE_URL } from "./constants";
+
+let socket;
 
 const createSocketConnection = () => {
-    if (location.hostname === "localhost") {
-        return io(BASE_URL);
-    } else {
-        return io("/", { path: "/api/socket.io" });
+    if (!socket) {
+        socket = io("https://campusverse.duckdns.org", {
+            transports: ["websocket"], // force upgrade
+            reconnection: true,
+            reconnectionAttempts: 5,
+            timeout: 10000,
+        });
     }
-}
+    return socket;
+};
 
 export default createSocketConnection;

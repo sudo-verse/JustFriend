@@ -43,9 +43,14 @@ const Login = () => {
     }
   };
 
+  const [showVerifyPopup, setShowVerifyPopup] = useState(false);
+
+  const [submitting, setSubmitting] = useState(false);
+
   const handleSubmit = async () => {
     try {
       setErr(null); // Clear previous errors
+      setSubmitting(true);
       if (isLogin) {
         const res = await axios.post(BASE_URL + '/login', {
           email,
@@ -65,10 +70,13 @@ const Login = () => {
 
         dispatch(addUser(res.data));
         navigate('/profile');
+        setShowVerifyPopup(true);
       }
     } catch (err) {
       setErr(err.response?.data || "Something went wrong");
       console.error(err);
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -124,7 +132,7 @@ const Login = () => {
                   value={gender}
                   onChange={(e) => setGender(e.target.value)}
                 >
-                  <option value="" disabled>
+                  <option value="" disabled >
                     Select Gender
                   </option>
                   <option value="Male">Male</option>
@@ -137,7 +145,7 @@ const Login = () => {
 
             <div>
               <label className="label">
-                <span className="label-text font-medium">Email Address</span>
+                <span className="label-text font-medium py-3">Email Address</span>
               </label>
               <input
                 type="email"
@@ -150,7 +158,7 @@ const Login = () => {
 
             <div>
               <label className="label">
-                <span className="label-text font-medium">Password</span>
+                <span className="label-text font-medium py-3">Password</span>
               </label>
               <input
                 type="password"
@@ -166,9 +174,9 @@ const Login = () => {
             <button
               className="btn btn-primary w-full mt-6 shadow-lg shadow-primary/20"
               onClick={handleSubmit}
-              disabled={uploading}
+              disabled={uploading || submitting}
             >
-              {isLogin ? "Login to Account" : (uploading ? "Uploading Image..." : "Create Account")}
+              {isLogin ? (submitting ? "Logging in..." : "Login to Account") : (uploading ? "Uploading Image..." : (submitting ? "Creating Account..." : "Create Account"))}
             </button>
 
             <div className="divider text-xs opacity-50 my-4">OR</div>
@@ -185,6 +193,41 @@ const Login = () => {
           </div>
         </div>
       </div>
+      {/* Verification Popup */}
+      {showVerifyPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="card w-full max-w-sm bg-base-100 shadow-2xl border border-primary/20 p-6 m-4 animate-scale-up">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 text-3xl">
+                ✉️
+              </div>
+              <h3 className="text-2xl font-bold mb-2 text-base-content">Verify Your Email</h3>
+              <p className="text-base-content/70 mb-6">
+                We've sent a verification link to <span className="font-semibold text-primary">{email}</span>.<br />
+                Please check your inbox to activate your account.
+              </p>
+              <div className="flex flex-col gap-3 w-full">
+                <button
+                  onClick={() => {
+                    setShowVerifyPopup(false);
+                    setIsLogin(true); // Switch to login view
+                    window.open('https://gmail.com', '_blank'); // Optional helper
+                  }}
+                  className="btn btn-primary w-full shadow-lg shadow-primary/30"
+                >
+                  Open Email & Login
+                </button>
+                <button
+                  onClick={() => setShowVerifyPopup(false)}
+                  className="btn btn-ghost btn-sm"
+                >
+                  I'll do it later
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
