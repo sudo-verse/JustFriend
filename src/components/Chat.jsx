@@ -56,36 +56,36 @@ const Chat = () => {
     }, [connections, dispatch, targetUser]);
 
     // Socket Connection
-   useEffect(() => {
-  if (!userId) return;
+    useEffect(() => {
+        if (!userId) return;
 
-  const socket = createSocketConnection();
-  socketRef.current = socket;
+        const socket = createSocketConnection();
+        socketRef.current = socket;
 
-  socket.on("connect", () => {
-    console.log("✅ socket connected", socket.id);
-    socket.emit("joinChat", userId, id);
-  });
+        socket.on("connect", () => {
+            console.log("✅ socket connected", socket.id);
+            socket.emit("joinChat", userId, id);
+        });
 
-  socket.on("chatHistory", setMessages);
-  socket.on("receiveMessage", (msg) =>
-    setMessages((prev) => [...prev, msg])
-  );
+        socket.on("chatHistory", setMessages);
+        socket.on("receiveMessage", (msg) =>
+            setMessages((prev) => [...prev, msg])
+        );
 
-  socket.on("userTyping", () => setIsTyping(true));
-  socket.on("userStopTyping", () => setIsTyping(false));
+        socket.on("userTyping", () => setIsTyping(true));
+        socket.on("userStopTyping", () => setIsTyping(false));
 
-  return () => {
-    socket.off();          // remove listeners
-    socket.disconnect();   // disconnect ON UNMOUNT ONLY
-  };
-}, []); // 👈 EMPTY dependency array
+        return () => {
+            socket.off();          // remove listeners
+            socket.disconnect();   // disconnect
+        };
+    }, [userId]);
 
-useEffect(() => {
-  if (socketRef.current?.connected) {
-    socketRef.current.emit("joinChat", userId, id);
-  }
-}, [id]);
+    useEffect(() => {
+        if (socketRef.current?.connected) {
+            socketRef.current.emit("joinChat", userId, id);
+        }
+    }, [id]);
 
     const handleSend = (e) => {
         e.preventDefault();
