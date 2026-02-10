@@ -56,43 +56,36 @@ const Chat = () => {
     }, [connections, dispatch, targetUser]);
 
     // Socket Connection
-    useEffect(() => {
-        if (!userId) return;
+   useEffect(() => {
+  if (!userId) return;
 
-        // Initialize socket
-        socketRef.current = createSocketConnection();
-        const socket = socketRef.current;
+  const socket = createSocketConnection();
+  socketRef.current = socket;
 
-        socket.on("connect", () => {
-            // console.log("Connected to server");
-            socket.emit("joinChat", userId, id);
-        });
+  socket.on("connect", () => {
+    console.log("✅ socket connected", socket.id);
+    socket.emit("joinChat", userId, id);
+  });
 
-        // Emit immediately (in case already connected logic inside socket util)
-        socket.emit("joinChat", userId, id);
+  socket.on("chatHistory", setMessages);
+  socket.on("receiveMessage", (msg) =>
+    setMessages((prev) => [...prev, msg])
+  );
 
-        socket.on("chatHistory", (history) => {
-            setMessages(history);
-        });
+  socket.on("userTyping", () => setIsTyping(true));
+  socket.on("userStopTyping", () => setIsTyping(false));
 
-        socket.on("receiveMessage", (message) => {
-            setMessages((prev) => [...prev, message]);
-        });
+  return () => {
+    socket.off();          // remove listeners
+    socket.disconnect();   // disconnect ON UNMOUNT ONLY
+  };
+}, []); // 👈 EMPTY dependency array
 
-        socket.on("userTyping", () => {
-            setIsTyping(true);
-            bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-        });
-
-        socket.on("userStopTyping", () => {
-            setIsTyping(false);
-        });
-
-        return () => {
-            socket.disconnect();
-            socketRef.current = null;
-        };
-    }, [userId, id]);
+useEffect(() => {
+  if (socketRef.current?.connected) {
+    socketRef.current.emit("joinChat", userId, id);
+  }
+}, [id]);
 
     const handleSend = (e) => {
         e.preventDefault();
