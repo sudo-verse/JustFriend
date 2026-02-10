@@ -28,10 +28,12 @@ const Body = () => {
     fetchUser();
   }, [dispatch, navigate]);
   return (
-    <div>
+    <div className="flex flex-col min-h-screen">
       <Navbar />
 
-      <Outlet />
+      <div className="flex-grow">
+        <Outlet />
+      </div>
       {!isChatPage && <Footer />}
     </div>
   )

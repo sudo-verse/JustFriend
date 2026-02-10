@@ -128,9 +128,9 @@ const EditProfile = () => {
               <label className="label text-sm font-semibold ml-1">Gender</label>
               <select className="select w-full glass-input rounded-xl" value={gender} onChange={(e) => setGender(e.target.value)}>
                 <option value="" disabled>Select Gender</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
               </select>
             </div>
 
