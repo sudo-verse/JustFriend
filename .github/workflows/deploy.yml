@@ -17,7 +17,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd ~/Justfriend
+            cd ~/JustFriend
             git pull origin main
             npm install
             npm run build
