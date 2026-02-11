@@ -18,7 +18,8 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/JustFriend
-            git pull origin master
+            git fetch
+            git pull
             npm install
             npm run build
             sudo rm -rf /usr/share/nginx/html/*
