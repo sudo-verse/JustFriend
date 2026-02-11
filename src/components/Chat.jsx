@@ -3,7 +3,7 @@ import createSocketConnection, { destroySocketConnection } from "../utils/socket
 import { useSelector, useDispatch } from "react-redux";
 import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
-import { BASE_URL } from "../utils/constants";
+import { BASE_URL, CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "../utils/constants";
 import { addConnection } from "../utils/connectionSlice";
 import CallModal from "./CallModal";
 
@@ -26,6 +26,16 @@ const Chat = () => {
 
     const socketRef = useRef(null);
     const bottomRef = useRef(null);
+    const fileInputRef = useRef(null);
+
+    // ── Media upload state ──
+    const [mediaPreview, setMediaPreview] = useState(null); // { file, url, type }
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [lightboxUrl, setLightboxUrl] = useState(null);
+
+    // ── Online status ──
+    const [isTargetOnline, setIsTargetOnline] = useState(false);
 
     // ── Call state ──
     const [callActive, setCallActive] = useState(false);
@@ -84,6 +94,13 @@ const Chat = () => {
         socket.on("userTyping", () => setIsTyping(true));
         socket.on("userStopTyping", () => setIsTyping(false));
 
+        // ── Online status listener ──
+        socket.on("onlineUsers", (userIds) => {
+            setIsTargetOnline(userIds.includes(id));
+        });
+        // Request current online users
+        socket.emit("getOnlineUsers");
+
         // ── Incoming call listener ──
         socket.on("incomingCall", ({ from, offer, callerName, callerPhoto, callType: inCallType }) => {
             setIncomingCallData({ from, offer, callerName, callerPhoto, callType: inCallType });
@@ -105,15 +122,21 @@ const Chat = () => {
 
     const handleSend = (e) => {
         e.preventDefault();
-        if (!newMessage.trim()) return;
+        if (!newMessage.trim() && !mediaPreview) return;
 
         if (socketRef.current && socketRef.current.connected) {
+            // If there's a media file, upload it first
+            if (mediaPreview) {
+                handleMediaUpload(newMessage);
+                return;
+            }
+
             socketRef.current.emit("sendMessage", userId, id, newMessage);
-            socketRef.current.emit("userStopTyping", userId, id);
+            socketRef.current.emit("stopTyping", userId, id);
 
             // Optimistic update
             const msg = {
-                _id: Date.now().toString() + Math.random().toString(), // Temp ID
+                _id: Date.now().toString() + Math.random().toString(),
                 text: newMessage,
                 sender: userId,
                 createdAt: new Date().toISOString()
@@ -123,11 +146,82 @@ const Chat = () => {
 
             clearTimeout(typingTimeoutRef.current);
         } else {
-            // Fallback: Store optimistically but maybe mark as pending? 
-            // For now we just don't send if not connected to avoid data loss confusion.
             console.warn("Socket not connected, message not sent.");
         }
     }
+
+    // ── Media file selection ──
+    const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file size (10MB max)
+        if (file.size > 10 * 1024 * 1024) {
+            alert("File too large. Max size is 10MB.");
+            return;
+        }
+
+        const type = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "file";
+        const url = URL.createObjectURL(file);
+        setMediaPreview({ file, url, type });
+
+        // Reset file input so same file can be re-selected
+        e.target.value = "";
+    };
+
+    const clearMediaPreview = () => {
+        if (mediaPreview?.url) URL.revokeObjectURL(mediaPreview.url);
+        setMediaPreview(null);
+        setUploadProgress(0);
+    };
+
+    // ── Upload media to Cloudinary and send via socket ──
+    const handleMediaUpload = async (caption) => {
+        if (!mediaPreview || !socketRef.current?.connected) return;
+
+        setIsUploading(true);
+        setUploadProgress(0);
+
+        try {
+            const formData = new FormData();
+            formData.append("file", mediaPreview.file);
+            formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+            const res = await axios.post(
+                `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`,
+                formData,
+                {
+                    onUploadProgress: (e) => {
+                        const pct = Math.round((e.loaded * 100) / e.total);
+                        setUploadProgress(pct);
+                    }
+                }
+            );
+
+            const mediaUrl = res.data.secure_url;
+            const mediaType = mediaPreview.type;
+
+            socketRef.current.emit("sendMedia", userId, id, mediaUrl, mediaType, caption);
+
+            // Optimistic update
+            const msg = {
+                _id: Date.now().toString() + Math.random().toString(),
+                text: caption || "",
+                mediaUrl,
+                mediaType,
+                sender: userId,
+                createdAt: new Date().toISOString()
+            };
+            setMessages((prev) => [...prev, msg]);
+            setNewMessage("");
+            clearMediaPreview();
+        } catch (err) {
+            console.error("Media upload failed:", err);
+            alert("Failed to upload media. Please try again.");
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     const handleInputChange = (e) => {
         setNewMessage(e.target.value);
@@ -137,14 +231,14 @@ const Chat = () => {
         const now = Date.now();
         // Throttle "userTyping" event
         if (now - lastTypingTimeRef.current > 2000) {
-            socketRef.current.emit("userTyping", userId, id);
+            socketRef.current.emit("typing", userId, id);
             lastTypingTimeRef.current = now;
         }
 
         clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = setTimeout(() => {
             if (socketRef.current) {
-                socketRef.current.emit("userStopTyping", userId, id);
+                socketRef.current.emit("stopTyping", userId, id);
             }
         }, 1000);
     };
@@ -172,7 +266,7 @@ const Chat = () => {
     );
 
     return (
-        <div className="flex flex-col h-[calc(100vh-1rem)] bg-base-200">
+        <div className="flex flex-col h-dvh overflow-hidden bg-base-200">
             {/* ── Call Modal Overlay ── */}
             {callActive && (
                 <CallModal
@@ -191,7 +285,7 @@ const Chat = () => {
             )}
 
             {/* Chat Header */}
-            <div className="flex items-center px-4 py-3 bg-base-100/80 backdrop-blur-md border-b border-base-300 shadow-sm z-10 sticky top-0">
+            <div className="flex-shrink-0 flex items-center px-4 py-3 bg-base-100/80 backdrop-blur-md border-b border-base-300 shadow-sm z-10">
                 <Link to="/connections" className="btn btn-ghost btn-circle btn-sm mr-2">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -210,7 +304,9 @@ const Chat = () => {
 
                 <div className="ml-3 flex-1">
                     <h2 className="font-bold text-base-content">{targetUser?.name || "Chat Room"}</h2>
-                    <p className="text-xs text-base-content/60">{isTyping ? "Typing..." : (targetUser ? "Online" : "Connecting...")}</p>
+                    <p className="text-xs text-base-content/60">
+                        {isTyping ? "Typing..." : (isTargetOnline ? "Online" : "Offline")}
+                    </p>
                 </div>
 
                 {/* ── Voice & Video Call Buttons ── */}
@@ -241,7 +337,7 @@ const Chat = () => {
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
                 {messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-base-content/40">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mb-2">
@@ -268,8 +364,34 @@ const Chat = () => {
                                 {isMe ? "You" : (targetUser?.name || "User")}
                                 <time className="ml-1 text-[10px]">{formatTime(msg.createdAt)}</time>
                             </div>
-                            <div className={`chat-bubble ${isMe ? "chat-bubble-primary shadow-lg" : "chat-bubble-base-100 shadow-sm bg-white text-black dark:bg-gray-800 dark:text-white"}`}>
-                                {msg.text}
+                            <div className={`chat-bubble ${isMe ? "chat-bubble-primary shadow-lg" : "chat-bubble-base-100 shadow-sm bg-white text-black dark:bg-gray-800 dark:text-white"} ${msg.mediaUrl ? "p-1.5" : ""}`}>
+                                {msg.mediaUrl && msg.mediaType === "image" && (
+                                    <img
+                                        src={msg.mediaUrl}
+                                        alt="Shared image"
+                                        className="rounded-xl max-w-[240px] sm:max-w-[300px] w-full cursor-pointer hover:opacity-90 transition-opacity"
+                                        loading="lazy"
+                                        onClick={() => setLightboxUrl(msg.mediaUrl)}
+                                    />
+                                )}
+                                {msg.mediaUrl && msg.mediaType === "video" && (
+                                    <video
+                                        src={msg.mediaUrl}
+                                        controls
+                                        playsInline
+                                        preload="metadata"
+                                        className="rounded-xl max-w-[240px] sm:max-w-[300px] w-full"
+                                    />
+                                )}
+                                {msg.mediaUrl && msg.mediaType === "file" && (
+                                    <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 py-1 px-2 hover:underline">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 flex-shrink-0">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                        </svg>
+                                        <span className="text-sm">Download File</span>
+                                    </a>
+                                )}
+                                {msg.text && <p className={msg.mediaUrl ? "mt-1.5 px-1" : ""}>{msg.text}</p>}
                             </div>
                         </div>
                     );
@@ -291,27 +413,125 @@ const Chat = () => {
                 <div ref={bottomRef} />
             </div>
 
+            {/* ── Media Preview Strip ── */}
+            {mediaPreview && (
+                <div className="flex-shrink-0 px-4 py-2 bg-base-100/90 border-t border-base-300">
+                    <div className="max-w-4xl mx-auto flex items-center gap-3">
+                        <div className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-primary/30 flex-shrink-0">
+                            {mediaPreview.type === "image" ? (
+                                <img src={mediaPreview.url} alt="Preview" className="w-full h-full object-cover" />
+                            ) : mediaPreview.type === "video" ? (
+                                <video src={mediaPreview.url} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full bg-base-200 flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-base-content/50">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                    </svg>
+                                </div>
+                            )}
+                            {isUploading && (
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                    <span className="text-white text-xs font-bold">{uploadProgress}%</span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm text-base-content/70 truncate">{mediaPreview.file.name}</p>
+                            <p className="text-xs text-base-content/40">{(mediaPreview.file.size / 1024).toFixed(1)} KB</p>
+                            {isUploading && (
+                                <div className="mt-1 w-full bg-base-300 rounded-full h-1.5 overflow-hidden">
+                                    <div
+                                        className="bg-primary h-full rounded-full transition-all duration-300"
+                                        style={{ width: `${uploadProgress}%` }}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        {!isUploading && (
+                            <button
+                                type="button"
+                                onClick={clearMediaPreview}
+                                className="btn btn-ghost btn-circle btn-sm"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Input Area */}
-            <div className="p-4 bg-base-100/80 backdrop-blur-md border-t border-base-300">
+            <div className="flex-shrink-0 p-4 bg-base-100/80 backdrop-blur-md border-t border-base-300">
                 <form onSubmit={handleSend} className="max-w-4xl mx-auto relative flex items-center gap-2">
+                    {/* Hidden file input */}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*,video/*,.pdf,.doc,.docx,.zip"
+                        className="hidden"
+                        onChange={handleFileSelect}
+                    />
+
+                    {/* Attachment button */}
+                    <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="btn btn-ghost btn-circle btn-sm flex-shrink-0 hover:bg-primary/10 hover:text-primary transition-colors"
+                        disabled={isUploading}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+                        </svg>
+                    </button>
+
                     <input
                         type="text"
-                        placeholder="Type a message..."
+                        placeholder={mediaPreview ? "Add a caption..." : "Type a message..."}
                         className="input input-bordered w-full rounded-full pl-5 pr-12 focus:outline-none focus:ring-2 focus:ring-primary shadow-sm glass-input"
                         value={newMessage}
                         onChange={handleInputChange}
+                        disabled={isUploading}
                     />
                     <button
                         type="submit"
-                        className={`btn btn-circle btn-primary absolute right-1 z-1 transition-transform ${newMessage.trim() ? "scale-100" : "scale-90 opacity-80"}`}
-                        disabled={!newMessage.trim()}
+                        className={`btn btn-circle btn-primary absolute right-1 z-1 transition-transform ${(newMessage.trim() || mediaPreview) ? "scale-100" : "scale-90 opacity-80"}`}
+                        disabled={(!newMessage.trim() && !mediaPreview) || isUploading}
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 ml-0.5">
-                            <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-                        </svg>
+                        {isUploading ? (
+                            <span className="loading loading-spinner loading-sm"></span>
+                        ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 ml-0.5">
+                                <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+                            </svg>
+                        )}
                     </button>
                 </form>
             </div>
+
+            {/* ── Image Lightbox ── */}
+            {lightboxUrl && (
+                <div
+                    className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4 cursor-pointer"
+                    onClick={() => setLightboxUrl(null)}
+                >
+                    <button
+                        className="absolute top-4 right-4 btn btn-circle btn-ghost text-white hover:bg-white/20"
+                        onClick={() => setLightboxUrl(null)}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                    <img
+                        src={lightboxUrl}
+                        alt="Full size"
+                        className="max-w-full max-h-full object-contain rounded-lg"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
         </div>
     );
 };

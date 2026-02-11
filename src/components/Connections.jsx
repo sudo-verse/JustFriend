@@ -4,11 +4,15 @@ import { BASE_URL } from '../utils/constants'
 import { useDispatch, useSelector } from 'react-redux'
 import { addConnection } from '../utils/connectionSlice'
 import { Link } from 'react-router-dom'
+import createSocketConnection from '../utils/socket'
 
 const Connections = () => {
   const dispatch = useDispatch();
   const connections = useSelector((state) => state.connections);
+  const user = useSelector((state) => state.user);
+  const userId = user?.currentUser?._id;
   const [loading, setLoading] = useState(true);
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
   useEffect(() => {
     const fetchConnections = async () => {
@@ -24,6 +28,32 @@ const Connections = () => {
     };
     fetchConnections();
   }, [dispatch]);
+
+  // Listen for online users via socket
+  useEffect(() => {
+    if (!userId) return;
+
+    const socket = createSocketConnection();
+
+    // Register this user and request online list
+    if (socket.connected) {
+      socket.emit("registerUser", userId);
+      socket.emit("getOnlineUsers");
+    } else {
+      socket.on("connect", () => {
+        socket.emit("registerUser", userId);
+        socket.emit("getOnlineUsers");
+      });
+    }
+
+    socket.on("onlineUsers", (userIds) => {
+      setOnlineUsers(userIds);
+    });
+
+    return () => {
+      socket.off("onlineUsers");
+    };
+  }, [userId]);
 
   if (loading) {
     return (
@@ -62,44 +92,47 @@ const Connections = () => {
         </h1>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {connections.map((connection) => (
-            <div
-              key={connection._id}
-              className="glass-card rounded-2xl p-6 flex flex-col items-center text-center hover:scale-[1.02] transition-transform duration-300 group"
-            >
-              <div className="relative mb-4">
-                <div className="w-24 h-24 rounded-full p-[2px] bg-gradient-to-tr from-primary to-secondary">
-                  <img
-                    src={connection.photoUrl || "https://via.placeholder.com/150"}
-                    alt={connection.name}
-                    className="w-full h-full rounded-full object-cover border-2 border-base-100"
-                  />
+          {connections.map((connection) => {
+            const isOnline = onlineUsers.includes(connection._id);
+            return (
+              <div
+                key={connection._id}
+                className="glass-card rounded-2xl p-6 flex flex-col items-center text-center hover:scale-[1.02] transition-transform duration-300 group"
+              >
+                <div className="relative mb-4">
+                  <div className="w-24 h-24 rounded-full p-[2px] bg-gradient-to-tr from-primary to-secondary">
+                    <img
+                      src={connection.photoUrl || "https://via.placeholder.com/150"}
+                      alt={connection.name}
+                      className="w-full h-full rounded-full object-cover border-2 border-base-100"
+                    />
+                  </div>
+                  <div className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-base-100 ${isOnline ? "bg-success" : "bg-base-content/30"}`}></div>
                 </div>
-                <div className="absolute bottom-1 right-1 w-4 h-4 bg-success rounded-full border-2 border-base-100"></div>
+
+                <h2 className="text-lg font-bold text-base-content group-hover:text-primary transition-colors">
+                  {connection.name}
+                </h2>
+
+                <p className="text-xs text-base-content/60 mb-2 max-w-[200px] truncate">
+                  {connection.about || "No bio available"}
+                </p>
+
+                <p className="text-xs text-base-content/40 mb-4 font-mono">
+                  {connection.email}
+                </p>
+
+                <Link to={`/chat/${connection._id}`} className="w-full">
+                  <button className="btn btn-primary btn-sm rounded-full w-full gap-2 shadow-lg shadow-primary/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                      <path fillRule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 4.014 1 5.426v5.148c0 1.413.993 2.67 2.43 2.902.848.137 1.705.248 2.57.331v3.443a.75.75 0 001.28.53l3.58-3.579a.78.78 0 01.527-.224 41.202 41.202 0 003.444-.33c1.436-.23 2.429-1.487 2.429-2.902V5.426c0-1.413-.993-2.67-2.43-2.902A41.289 41.289 0 0010 2zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5zm-5.25.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm11.25-.75a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+                    </svg>
+                    Message
+                  </button>
+                </Link>
               </div>
-
-              <h2 className="text-lg font-bold text-base-content group-hover:text-primary transition-colors">
-                {connection.name}
-              </h2>
-
-              <p className="text-xs text-base-content/60 mb-2 max-w-[200px] truncate">
-                {connection.about || "No bio available"}
-              </p>
-
-              <p className="text-xs text-base-content/40 mb-4 font-mono">
-                {connection.email}
-              </p>
-
-              <Link to={`/chat/${connection._id}`} className="w-full">
-                <button className="btn btn-primary btn-sm rounded-full w-full gap-2 shadow-lg shadow-primary/20">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                    <path fillRule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 4.014 1 5.426v5.148c0 1.413.993 2.67 2.43 2.902.848.137 1.705.248 2.57.331v3.443a.75.75 0 001.28.53l3.58-3.579a.78.78 0 01.527-.224 41.202 41.202 0 003.444-.33c1.436-.23 2.429-1.487 2.429-2.902V5.426c0-1.413-.993-2.67-2.43-2.902A41.289 41.289 0 0010 2zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5zm-5.25.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm11.25-.75a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
-                  </svg>
-                  Message
-                </button>
-              </Link>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
@@ -107,3 +140,4 @@ const Connections = () => {
 }
 
 export default Connections
+

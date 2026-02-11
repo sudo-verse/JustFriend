@@ -93,12 +93,15 @@ const CallModal = ({
         try {
             const constraints = {
                 audio: true,
-                video: callType === "video",
+                video: callType === "video" ? { facingMode: "user" } : false,
             };
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
             localStreamRef.current = stream;
+            // Attach to video element immediately if ref is available
             if (localVideoRef.current) {
                 localVideoRef.current.srcObject = stream;
+                // Force play for mobile browsers
+                localVideoRef.current.play().catch(() => { });
             }
             return stream;
         } catch (err) {
@@ -262,6 +265,29 @@ const CallModal = ({
         };
     }, [socket, isIncoming, initiateCall, startTimer, cleanup, onClose]);
 
+    // ── Re-attach streams when video refs become available (crucial for mobile) ──
+    useEffect(() => {
+        if (callState === "connected") {
+            if (localVideoRef.current && localStreamRef.current && !localVideoRef.current.srcObject) {
+                localVideoRef.current.srcObject = localStreamRef.current;
+                localVideoRef.current.play().catch(() => { });
+            }
+            if (remoteVideoRef.current && peerRef.current) {
+                const receivers = peerRef.current.getReceivers();
+                if (receivers.length > 0 && !remoteVideoRef.current.srcObject) {
+                    const remoteStream = new MediaStream();
+                    receivers.forEach(receiver => {
+                        if (receiver.track) remoteStream.addTrack(receiver.track);
+                    });
+                    if (remoteStream.getTracks().length > 0) {
+                        remoteVideoRef.current.srcObject = remoteStream;
+                        remoteVideoRef.current.play().catch(() => { });
+                    }
+                }
+            }
+        }
+    }, [callState]);
+
     // ── Auto-timeout for ringing (30s) ──
     useEffect(() => {
         if (callState === "calling" || callState === "ringing") {
@@ -291,34 +317,30 @@ const CallModal = ({
                     <div className={`absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-[120px] opacity-20 transition-colors duration-1000 ${callState === "connected" ? "bg-emerald-500" : callState === "ended" ? "bg-red-500" : "bg-violet-500"}`} />
                 </div>
 
-                {/* ── Video area (if video call & connected) ── */}
-                {callType === "video" && callState === "connected" && (
-                    <>
-                        {/* Remote video – full screen */}
-                        <video
-                            ref={remoteVideoRef}
-                            autoPlay
-                            playsInline
-                            className="absolute inset-0 w-full h-full object-cover"
-                        />
-                        {/* Local video – PIP */}
-                        <video
-                            ref={localVideoRef}
-                            autoPlay
-                            muted
-                            playsInline
-                            className="absolute top-20 right-4 w-36 h-48 rounded-2xl object-cover border-2 border-white/20 shadow-2xl z-20"
-                        />
-                    </>
-                )}
-
-                {/* ── Hidden audio elements for audio calls ── */}
-                {callType === "audio" && (
-                    <>
-                        <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
-                        <video ref={localVideoRef} autoPlay muted playsInline className="hidden" />
-                    </>
-                )}
+                {/* ── Video / Audio elements (always mounted so refs are available) ── */}
+                {/* Remote video – full screen when video call is connected, hidden otherwise */}
+                <video
+                    ref={remoteVideoRef}
+                    autoPlay
+                    playsInline
+                    webkit-playsinline="true"
+                    className={callType === "video" && callState === "connected"
+                        ? "absolute inset-0 w-full h-full object-cover"
+                        : "hidden"
+                    }
+                />
+                {/* Local video – PIP when video call is connected, hidden otherwise */}
+                <video
+                    ref={localVideoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    webkit-playsinline="true"
+                    className={callType === "video" && callState === "connected"
+                        ? "absolute top-20 right-4 w-36 h-48 rounded-2xl object-cover border-2 border-white/20 shadow-2xl z-20"
+                        : "hidden"
+                    }
+                />
 
                 {/* ── Top status bar ── */}
                 <div className="relative z-20 w-full pt-12 pb-4 text-center">
