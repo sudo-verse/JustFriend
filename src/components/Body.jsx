@@ -29,7 +29,7 @@ const Body = () => {
   }, [dispatch, navigate]);
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
+      {!isChatPage && <Navbar />}
 
       <div className="flex-grow">
         <Outlet />

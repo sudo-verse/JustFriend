@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import createSocketConnection from "../utils/socket";
+import createSocketConnection, { destroySocketConnection } from "../utils/socket";
 import { useSelector, useDispatch } from "react-redux";
 import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
@@ -93,8 +93,7 @@ const Chat = () => {
         });
 
         return () => {
-            socket.off();          // remove listeners
-            socket.disconnect();   // disconnect
+            destroySocketConnection(); // properly clean up socket + clear singleton
         };
     }, [userId]);
 
@@ -173,7 +172,7 @@ const Chat = () => {
     );
 
     return (
-        <div className="flex flex-col h-[calc(100vh-4rem)] bg-base-200">
+        <div className="flex flex-col h-[calc(100vh-1rem)] bg-base-200">
             {/* ── Call Modal Overlay ── */}
             {callActive && (
                 <CallModal
