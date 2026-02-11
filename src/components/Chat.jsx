@@ -1,10 +1,11 @@
 import { useParams, Link } from "react-router-dom";
 import createSocketConnection from "../utils/socket";
 import { useSelector, useDispatch } from "react-redux";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import { BASE_URL } from "../utils/constants";
 import { addConnection } from "../utils/connectionSlice";
+import CallModal from "./CallModal";
 
 const Chat = () => {
     const { id } = useParams();
@@ -25,6 +26,12 @@ const Chat = () => {
 
     const socketRef = useRef(null);
     const bottomRef = useRef(null);
+
+    // ── Call state ──
+    const [callActive, setCallActive] = useState(false);
+    const [callType, setCallType] = useState(null); // "audio" | "video"
+    const [isIncomingCall, setIsIncomingCall] = useState(false);
+    const [incomingCallData, setIncomingCallData] = useState(null);
 
     const formatTime = (date) => {
         return new Date(date).toLocaleTimeString([], {
@@ -65,6 +72,8 @@ const Chat = () => {
         socket.on("connect", () => {
             console.log("✅ socket connected", socket.id);
             socket.emit("joinChat", userId, id);
+            // Register user for call routing
+            socket.emit("registerUser", userId);
         });
 
         socket.on("chatHistory", setMessages);
@@ -74,6 +83,14 @@ const Chat = () => {
 
         socket.on("userTyping", () => setIsTyping(true));
         socket.on("userStopTyping", () => setIsTyping(false));
+
+        // ── Incoming call listener ──
+        socket.on("incomingCall", ({ from, offer, callerName, callerPhoto, callType: inCallType }) => {
+            setIncomingCallData({ from, offer, callerName, callerPhoto, callType: inCallType });
+            setCallType(inCallType);
+            setIsIncomingCall(true);
+            setCallActive(true);
+        });
 
         return () => {
             socket.off();          // remove listeners
@@ -133,6 +150,21 @@ const Chat = () => {
         }, 1000);
     };
 
+    // ── Call handlers ──
+    const startCall = useCallback((type) => {
+        setCallType(type);
+        setIsIncomingCall(false);
+        setIncomingCallData(null);
+        setCallActive(true);
+    }, []);
+
+    const closeCall = useCallback(() => {
+        setCallActive(false);
+        setCallType(null);
+        setIsIncomingCall(false);
+        setIncomingCallData(null);
+    }, []);
+
     // Prevent rendering until we have the current user to avoid socket/logic errors
     if (!currentUser) return (
         <div className="flex justify-center items-center h-[calc(100vh-4rem)] bg-base-200">
@@ -142,6 +174,23 @@ const Chat = () => {
 
     return (
         <div className="flex flex-col h-[calc(100vh-4rem)] bg-base-200">
+            {/* ── Call Modal Overlay ── */}
+            {callActive && (
+                <CallModal
+                    socket={socketRef.current}
+                    userId={userId}
+                    targetUserId={isIncomingCall ? incomingCallData?.from : id}
+                    targetUserName={isIncomingCall ? incomingCallData?.callerName : targetUser?.name}
+                    targetUserPhoto={isIncomingCall ? incomingCallData?.callerPhoto : targetUser?.photoUrl}
+                    callType={callType}
+                    isIncoming={isIncomingCall}
+                    incomingOffer={incomingCallData?.offer}
+                    callerName={incomingCallData?.callerName}
+                    callerPhoto={incomingCallData?.callerPhoto}
+                    onClose={closeCall}
+                />
+            )}
+
             {/* Chat Header */}
             <div className="flex items-center px-4 py-3 bg-base-100/80 backdrop-blur-md border-b border-base-300 shadow-sm z-10 sticky top-0">
                 <Link to="/connections" className="btn btn-ghost btn-circle btn-sm mr-2">
@@ -160,9 +209,35 @@ const Chat = () => {
                     </div>
                 </div>
 
-                <div className="ml-3">
+                <div className="ml-3 flex-1">
                     <h2 className="font-bold text-base-content">{targetUser?.name || "Chat Room"}</h2>
                     <p className="text-xs text-base-content/60">{isTyping ? "Typing..." : (targetUser ? "Online" : "Connecting...")}</p>
+                </div>
+
+                {/* ── Voice & Video Call Buttons ── */}
+                <div className="flex items-center gap-1">
+                    <button
+                        id="voice-call-btn"
+                        onClick={() => startCall("audio")}
+                        className="btn btn-ghost btn-circle btn-sm tooltip tooltip-bottom hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors"
+                        data-tip="Voice Call"
+                        disabled={callActive}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+                        </svg>
+                    </button>
+                    <button
+                        id="video-call-btn"
+                        onClick={() => startCall("video")}
+                        className="btn btn-ghost btn-circle btn-sm tooltip tooltip-bottom hover:bg-violet-500/10 hover:text-violet-500 transition-colors"
+                        data-tip="Video Call"
+                        disabled={callActive}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+                        </svg>
+                    </button>
                 </div>
             </div>
 

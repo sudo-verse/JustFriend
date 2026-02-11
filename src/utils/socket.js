@@ -4,7 +4,7 @@ let socket;
 
 const createSocketConnection = () => {
     if (!socket) {
-        socket = io("https://campusverse.duckdns.org", {
+        socket = io("http://localhost:7776", {
             transports: ["websocket"], // force upgrade
             reconnection: true,
             reconnectionAttempts: 5,
