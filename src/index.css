@@ -9,3 +9,19 @@
     @apply bg-base-100/50 backdrop-blur-sm border-white/20 focus:border-primary/50 focus:ring-0;
   }
 }
+
+/* Navbar mobile slide-down animation */
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.2s ease-out;
+}

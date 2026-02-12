@@ -20,6 +20,7 @@ const Requests = lazy(() => import('./components/Requests.jsx'))
 const Premium = lazy(() => import('./components/Premium.jsx'))
 const Chat = lazy(() => import('./components/Chat.jsx'))
 const PaymentSuccess = lazy(() => import('./components/PaymentSuccess.jsx'))
+const UserProfile = lazy(() => import('./components/UserProfile.jsx'))
 
 // Loading fallback for code-split routes
 const RouteFallback = () => (
@@ -54,6 +55,7 @@ const App = () => {
                 <Route path="premium" element={<Premium />} />
                 <Route path="chat/:id" element={<Chat />} />
                 <Route path="payment-success" element={<PaymentSuccess />} />
+                <Route path="user/:id" element={<UserProfile />} />
               </Route>
 
               {/* ── LEGACY ROUTES (backward compatibility) ── */}
@@ -80,6 +82,9 @@ const App = () => {
               </Route>
               <Route path="/payment-success" element={<Body />}>
                 <Route index element={<PaymentSuccess />} />
+              </Route>
+              <Route path="/user/:id" element={<Body />}>
+                <Route index element={<UserProfile />} />
               </Route>
 
               {/* ── 404 PAGE ── */}
