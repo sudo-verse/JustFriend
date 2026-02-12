@@ -3,11 +3,157 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CampusVerse</title>
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
+  <!-- Primary Meta Tags -->
+  <title>CampusVerse — Connect with College Students | Campus Social Network</title>
+  <meta name="description" content="Join CampusVerse — India's #1 campus social network. Meet new friends, chat in real-time, video call, and make meaningful connections at your college. Sign up free!" />
+  <meta name="keywords" content="campus social network, college friend finder, student networking, campus matchmaking, college chat app, connect with college students, campus dating app India" />
+  <meta name="author" content="CampusVerse" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://campusverse.duckdns.org/" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <link rel="apple-touch-icon" href="/vite.svg" />
+
+  <!-- Open Graph / Facebook / LinkedIn -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://campusverse.duckdns.org/" />
+  <meta property="og:title" content="CampusVerse — Connect with College Students" />
+  <meta property="og:description" content="India's #1 campus social network. Meet friends, chat, video call & build meaningful connections at your college. Join free!" />
+  <meta property="og:image" content="https://campusverse.duckdns.org/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="CampusVerse" />
+  <meta property="og:locale" content="en_IN" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://campusverse.duckdns.org/" />
+  <meta name="twitter:title" content="CampusVerse — Connect with College Students" />
+  <meta name="twitter:description" content="India's #1 campus social network. Meet friends, chat, video call & build connections." />
+  <meta name="twitter:image" content="https://campusverse.duckdns.org/og-image.png" />
+
+  <!-- Mobile App Meta -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="CampusVerse" />
+  <meta name="application-name" content="CampusVerse" />
+  <meta name="theme-color" content="#6C3CE1" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <!-- Performance: Preconnect to external origins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="dns-prefetch" href="https://checkout.razorpay.com" />
+
+  <!-- Razorpay (deferred to not block rendering) -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+
+  <!-- Structured Data: Organization -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "CampusVerse",
+    "alternateName": "Campus Verse",
+    "url": "https://campusverse.duckdns.org",
+    "logo": "https://campusverse.duckdns.org/logo.png",
+    "description": "India's #1 campus social network for college students to connect, chat, and build meaningful relationships.",
+    "foundingDate": "2025",
+    "sameAs": [
+      "https://github.com/sudoverse/campusverse"
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer support",
+      "availableLanguage": ["English", "Hindi"]
+    }
+  }
+  </script>
+
+  <!-- Structured Data: SoftwareApplication -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "CampusVerse",
+    "operatingSystem": "Web",
+    "applicationCategory": "SocialNetworkingApplication",
+    "description": "Campus social networking platform with real-time chat, video calling, smart matching, and premium memberships for college students.",
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Free Plan",
+        "price": "0",
+        "priceCurrency": "INR",
+        "description": "Basic access with limited connections per day"
+      },
+      {
+        "@type": "Offer",
+        "name": "Silver Membership",
+        "priceCurrency": "INR",
+        "description": "Blue tick verification, 100 connections/day, 5 profile boosts/day, ad-free experience"
+      },
+      {
+        "@type": "Offer",
+        "name": "Gold Membership",
+        "priceCurrency": "INR",
+        "description": "Blue tick verification, unlimited connections, 10 profile boosts/day, ad-free experience, priority support"
+      }
+    ]
+  }
+  </script>
+
+  <!-- Structured Data: FAQ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is CampusVerse free for students?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes! CampusVerse is completely free to use. You can create a profile, discover students, send connection requests, and chat for free. Premium memberships (Silver and Gold) offer additional features like unlimited connections, profile boosts, and blue tick verification."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does CampusVerse matching work?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "CampusVerse shows you profiles of students from your campus and beyond. You can swipe to connect (Interested) or pass (Ignored). When both students express interest, a connection is made and you can start chatting instantly."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is CampusVerse safe for college students?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Absolutely. CampusVerse requires email verification for all accounts and has robust security measures. We verify student identities to ensure a safe campus community."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I video call on CampusVerse?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes! CampusVerse supports real-time voice and video calling between connected students. Simply open a chat and tap the call button to start a voice or video call."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What are the benefits of CampusVerse Premium?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "CampusVerse Premium offers two tiers: Silver (Blue Tick, 100 connections/day, 5 profile boosts, ad-free) and Gold (all Silver benefits plus unlimited connections, 10 profile boosts, and priority support)."
+        }
+      }
+    ]
+  }
+  </script>
 </head>
 
 <body>

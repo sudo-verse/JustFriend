@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from 'axios';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { addUser } from '../utils/userSlice.jsx';
 import { useNavigate } from 'react-router-dom';
 import { BASE_URL, CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '../utils/constants.jsx';
@@ -17,6 +17,15 @@ const Login = () => {
   const [err, setErr] = useState(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const user = useSelector((state) => state.user.currentUser);
+
+  // Redirect to feed if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/feed');
+    }
+  }, [user, navigate]);
+
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];

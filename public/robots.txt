@@ -1,0 +1,25 @@
+User-agent: *
+
+# Public pages - Allow
+Allow: /
+Allow: /features
+Allow: /how-it-works
+Allow: /about
+Allow: /login
+Allow: /premium
+
+# Authenticated routes - Disallow
+Disallow: /app/
+Disallow: /feed
+Disallow: /profile
+Disallow: /chat/
+Disallow: /connections
+Disallow: /requests
+Disallow: /payment-success
+
+# Assets
+Disallow: /src/
+Disallow: /node_modules/
+
+# Sitemap
+Sitemap: https://campusverse.duckdns.org/sitemap.xml
