@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Search, X, User, MessageCircle } from 'lucide-react'
+import { Search, X, User } from 'lucide-react'
 import axios from 'axios'
 import { BASE_URL } from '../utils/constants.jsx'
 import { useNavigate } from 'react-router-dom'
@@ -112,7 +112,7 @@ const SearchUsers = () => {
 
             {/* Results Dropdown */}
             {isOpen && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-base-100 rounded-xl border border-base-300 shadow-xl z-50 overflow-hidden animate-fade-in">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-base-100 rounded-xl border border-base-300 shadow-xl z-50 overflow-hidden animate-slide-down">
                     {results.length > 0 ? (
                         <ul className="py-1 max-h-80 overflow-y-auto">
                             {results.map((user) => (
@@ -125,7 +125,7 @@ const SearchUsers = () => {
                                         <div className="avatar shrink-0">
                                             <div className="w-10 h-10 rounded-full ring-2 ring-base-300 group-hover:ring-primary transition-all">
                                                 {user.photoUrl ? (
-                                                    <img src={user.photoUrl} alt={user.name} />
+                                                    <img src={user.photoUrl} alt={user.name} loading="lazy" />
                                                 ) : (
                                                     <div className="bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-lg">
                                                         {user.name?.charAt(0).toUpperCase()}
@@ -144,10 +144,10 @@ const SearchUsers = () => {
                                             </p>
                                         </div>
 
-                                        {/* Gender badge */}
-                                        <span className="badge badge-ghost badge-sm text-[10px] uppercase tracking-wider shrink-0 opacity-60">
-                                            {user.gender}
-                                        </span>
+                                        {/* View Profile arrow */}
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-base-content/20 group-hover:text-primary transition-colors shrink-0">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                        </svg>
                                     </button>
                                 </li>
                             ))}

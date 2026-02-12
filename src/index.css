@@ -5,17 +5,19 @@
   .glass-card {
     @apply bg-base-100/30 backdrop-blur-md border border-white/10 shadow-xl;
   }
+
   .glass-input {
     @apply bg-base-100/50 backdrop-blur-sm border-white/20 focus:border-primary/50 focus:ring-0;
   }
 }
 
-/* Navbar mobile slide-down animation */
+/* ── Navbar Mobile Slide-Down ── */
 @keyframes slide-down {
   from {
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -24,4 +26,77 @@
 
 .animate-slide-down {
   animation: slide-down 0.2s ease-out;
+}
+
+/* ── Fade In Up (for cards/modals) ── */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out;
+}
+
+/* ── Fade In (generic) ── */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* ── Bounce Once (for success icons) ── */
+@keyframes bounce-once {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.animate-bounce-once {
+  animation: bounce-once 0.4s ease-in-out;
+}
+
+/* ── Smooth scrollbar for dark mode ── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(var(--bc) / 0.15);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(var(--bc) / 0.25);
+}
+
+/* ── Selection color ── */
+::selection {
+  background: oklch(var(--p) / 0.3);
+  color: oklch(var(--pc));
 }

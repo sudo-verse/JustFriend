@@ -1,19 +1,38 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import axios from 'axios';
 import { removeUser } from '../utils/userSlice.jsx';
 import { BASE_URL } from '../utils/constants.jsx';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import SearchUsers from './SearchUsers.jsx';
-import { Menu, X, Home, Users, UserPlus, Crown, User, LogOut, Search } from 'lucide-react';
+import { Menu, X, Home, Users, UserPlus, Crown, User, LogOut, Search, Sun, Moon } from 'lucide-react';
 
 const Navbar = () => {
   const currentUser = useSelector((store) => store.user.currentUser);
+  const requests = useSelector((state) => state.requests);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('cv-theme') || 'dark');
+
+  // Apply theme
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('cv-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setMobileSearchOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     axios.delete(BASE_URL + '/logout', { withCredentials: true })
@@ -26,12 +45,16 @@ const Navbar = () => {
       });
   }
 
+  const requestCount = requests?.length || 0;
+
   const navLinks = [
     { to: '/feed', label: 'Feed', icon: Home },
     { to: '/connections', label: 'Connections', icon: Users },
-    { to: '/requests', label: 'Requests', icon: UserPlus },
+    { to: '/requests', label: 'Requests', icon: UserPlus, badge: requestCount },
     { to: '/premium', label: 'Premium', icon: Crown },
   ];
+
+  const isActive = (path) => location.pathname === path;
 
   return (
     <>
@@ -57,13 +80,19 @@ const Navbar = () => {
         {currentUser && (
           <div className="navbar-center hidden lg:flex">
             <ul className="menu menu-horizontal gap-1 px-0">
-              {navLinks.map(({ to, label }) => (
+              {navLinks.map(({ to, label, badge }) => (
                 <li key={to}>
                   <Link
                     to={to}
-                    className="font-medium text-sm hover:text-primary transition-colors rounded-lg px-3 py-2"
+                    className={`font-medium text-sm transition-colors rounded-lg px-3 py-2 relative ${isActive(to) ? 'text-primary bg-primary/10' : 'hover:text-primary'
+                      }`}
                   >
                     {label}
+                    {badge > 0 && (
+                      <span className="absolute -top-1 -right-1 badge badge-error badge-xs text-[10px] min-w-[18px] h-[18px] font-bold animate-pulse">
+                        {badge > 9 ? '9+' : badge}
+                      </span>
+                    )}
                   </Link>
                 </li>
               ))}
@@ -71,8 +100,8 @@ const Navbar = () => {
           </div>
         )}
 
-        {/* ── RIGHT: Search + Avatar ── */}
-        <div className="navbar-end gap-2">
+        {/* ── RIGHT: Search + Theme + Avatar ── */}
+        <div className="navbar-end gap-1.5">
           {currentUser ? (
             <>
               {/* Desktop search */}
@@ -87,6 +116,15 @@ const Navbar = () => {
                 aria-label="Search"
               >
                 <Search size={18} className={mobileSearchOpen ? 'text-primary' : ''} />
+              </button>
+
+              {/* Theme toggle */}
+              <button
+                onClick={toggleTheme}
+                className="btn btn-ghost btn-sm btn-square"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
               </button>
 
               {/* Avatar dropdown */}
@@ -120,7 +158,16 @@ const Navbar = () => {
               </div>
             </>
           ) : (
-            <Link to="/login" className="btn btn-primary btn-sm shadow-md shadow-primary/20">Login</Link>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleTheme}
+                className="btn btn-ghost btn-sm btn-square"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+              </button>
+              <Link to="/login" className="btn btn-primary btn-sm shadow-md shadow-primary/20">Login</Link>
+            </div>
           )}
         </div>
       </div>
@@ -136,15 +183,19 @@ const Navbar = () => {
       {currentUser && mobileMenuOpen && (
         <div className="lg:hidden sticky top-[65px] z-40 bg-base-100 border-b border-base-300 shadow-lg animate-slide-down">
           <ul className="menu menu-sm py-2 px-3 gap-0.5">
-            {navLinks.map(({ to, label, icon: Icon }) => (
+            {navLinks.map(({ to, label, icon: Icon, badge }) => (
               <li key={to}>
                 <Link
                   to={to}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="font-medium gap-3 py-3 rounded-xl hover:bg-primary/5 hover:text-primary transition-colors"
+                  className={`font-medium gap-3 py-3 rounded-xl transition-colors ${isActive(to) ? 'text-primary bg-primary/5' : 'hover:bg-primary/5 hover:text-primary'
+                    }`}
                 >
                   <Icon size={18} />
                   {label}
+                  {badge > 0 && (
+                    <span className="badge badge-error badge-sm ml-auto">{badge}</span>
+                  )}
                 </Link>
               </li>
             ))}

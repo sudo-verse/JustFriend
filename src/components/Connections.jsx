@@ -5,6 +5,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { addConnection } from '../utils/connectionSlice'
 import { Link } from 'react-router-dom'
 import createSocketConnection from '../utils/socket'
+import { CardGridSkeleton } from './SkeletonCard'
+import usePageTitle from '../hooks/usePageTitle'
 
 const Connections = () => {
   const dispatch = useDispatch();
@@ -13,6 +15,8 @@ const Connections = () => {
   const userId = user?.currentUser?._id;
   const [loading, setLoading] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState([]);
+
+  usePageTitle("Connections");
 
   useEffect(() => {
     const fetchConnections = async () => {
@@ -57,8 +61,12 @@ const Connections = () => {
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-base-300">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
+      <div className="min-h-[calc(100vh-4rem)] bg-base-300 p-4 md:p-8 relative overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]"></div>
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="h-10 bg-base-200 rounded-lg w-64 mx-auto mb-10 animate-pulse"></div>
+          <CardGridSkeleton count={8} />
+        </div>
       </div>
     );
   }
@@ -102,19 +110,28 @@ const Connections = () => {
                 <div className="relative mb-4">
                   <div className="w-24 h-24 rounded-full p-[2px] bg-gradient-to-tr from-primary to-secondary">
                     <img
-                      src={connection.photoUrl || "https://via.placeholder.com/150"}
+                      src={connection.photoUrl || "/default-avatar.svg"}
                       alt={connection.name}
                       className="w-full h-full rounded-full object-cover border-2 border-base-100"
+                      loading="lazy"
                     />
                   </div>
-                  <div className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-base-100 ${isOnline ? "bg-success" : "bg-base-content/30"}`}></div>
+                  <div className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-base-100 ${isOnline ? "bg-success" : "bg-base-content/30"}`}>
+                  </div>
                 </div>
 
                 <h2 className="text-lg font-bold text-base-content group-hover:text-primary transition-colors">
                   {connection.name}
                 </h2>
 
-                <p className="text-xs text-base-content/60 mb-2 max-w-[200px] truncate">
+                {isOnline && (
+                  <span className="badge badge-success badge-xs gap-1 mt-1 text-[10px]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-success-content"></span>
+                    Online
+                  </span>
+                )}
+
+                <p className="text-xs text-base-content/60 mb-2 mt-1 max-w-[200px] truncate">
                   {connection.about || "No bio available"}
                 </p>
 
@@ -140,4 +157,3 @@ const Connections = () => {
 }
 
 export default Connections
-

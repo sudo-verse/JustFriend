@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { playRingtone, playCallEndSound } from "../utils/sounds";
 
 // ICE servers for NAT traversal
 const ICE_SERVERS = {
@@ -299,6 +300,32 @@ const CallModal = ({
             return () => clearTimeout(timeout);
         }
     }, [callState, handleEndCall]);
+
+    // ── Ringtone for incoming calls ──
+    useEffect(() => {
+        if (callState === "ringing") {
+            // Start looping ringtone
+            ringtoneRef.current = playRingtone();
+        } else {
+            // Stop ringtone when state changes away from ringing
+            if (ringtoneRef.current) {
+                ringtoneRef.current.stop();
+                ringtoneRef.current = null;
+            }
+        }
+
+        // Play end sound
+        if (callState === "ended") {
+            playCallEndSound();
+        }
+
+        return () => {
+            if (ringtoneRef.current) {
+                ringtoneRef.current.stop();
+                ringtoneRef.current = null;
+            }
+        };
+    }, [callState]);
 
     // ── Determine display name / photo ──
     const displayName = isIncoming ? callerName || "Unknown" : targetUserName || "User";

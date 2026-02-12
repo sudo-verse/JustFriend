@@ -1,30 +1,151 @@
 import axios from "axios";
 import { BASE_URL } from "../utils/constants";
+import { useState, useRef } from "react";
+import { useSwipeable } from "react-swipeable";
+import toast from "react-hot-toast";
 
 const UserCard = ({ user, onNext }) => {
   if (!user) return null;
 
+  const [swipeDir, setSwipeDir] = useState(null); // 'left' | 'right' | null
+  const [offsetX, setOffsetX] = useState(0);
+  const [flyOut, setFlyOut] = useState(null); // 'left' | 'right'
+  const [actionInProgress, setActionInProgress] = useState(false);
+  const cardRef = useRef(null);
+
   const handleAction = async (type) => {
+    if (actionInProgress) return;
+    setActionInProgress(true);
+
+    const direction = type === "interested" ? "right" : "left";
+
     try {
       await axios.post(
         `${BASE_URL}/request/send/${type}/${user._id}`,
         null,
         { withCredentials: true }
       );
-      onNext();
+
+      // Trigger fly-out animation
+      setFlyOut(direction);
+      toast.success(
+        type === "interested"
+          ? `💜 Interested in ${user.name}!`
+          : `Passed on ${user.name}`,
+        { duration: 2000, position: "bottom-center" }
+      );
+
+      // Wait for animation to complete before showing next card
+      setTimeout(() => {
+        setFlyOut(null);
+        setOffsetX(0);
+        setSwipeDir(null);
+        setActionInProgress(false);
+        onNext();
+      }, 400);
     } catch (err) {
-      console.error(err);
+      const msg = err.response?.data;
+      if (typeof msg === "string" && msg.includes("already exists")) {
+        toast.error("Request already exists!", { position: "bottom-center" });
+        setTimeout(() => {
+          setActionInProgress(false);
+          onNext();
+        }, 500);
+      } else {
+        toast.error("Something went wrong", { position: "bottom-center" });
+        setActionInProgress(false);
+      }
     }
   };
 
+  const swipeHandlers = useSwipeable({
+    onSwiping: (e) => {
+      if (actionInProgress) return;
+      setOffsetX(e.deltaX);
+      setSwipeDir(e.deltaX > 0 ? "right" : "left");
+    },
+    onSwipedLeft: () => {
+      if (actionInProgress) return;
+      if (Math.abs(offsetX) > 100) {
+        handleAction("ignored");
+      } else {
+        setOffsetX(0);
+        setSwipeDir(null);
+      }
+    },
+    onSwipedRight: () => {
+      if (actionInProgress) return;
+      if (Math.abs(offsetX) > 100) {
+        handleAction("interested");
+      } else {
+        setOffsetX(0);
+        setSwipeDir(null);
+      }
+    },
+    onTouchEndOrOnMouseUp: () => {
+      if (Math.abs(offsetX) <= 100) {
+        setOffsetX(0);
+        setSwipeDir(null);
+      }
+    },
+    trackMouse: true,
+    preventScrollOnSwipe: true,
+  });
+
+  // Calculate rotation and opacity based on swipe offset
+  const rotation = offsetX * 0.08;
+  const swipeOpacity = Math.min(Math.abs(offsetX) / 150, 1);
+
+  // Fly-out transform
+  let flyTransform = "";
+  if (flyOut === "left") flyTransform = "translateX(-150%) rotate(-30deg)";
+  else if (flyOut === "right") flyTransform = "translateX(150%) rotate(30deg)";
+
   return (
-    <div className="relative w-full max-w-sm h-[600px] rounded-3xl overflow-hidden shadow-2xl transition-all duration-300 hover:shadow-primary/20 group">
+    <div
+      ref={cardRef}
+      {...swipeHandlers}
+      className="relative w-full max-w-sm h-[600px] rounded-3xl overflow-hidden shadow-2xl group select-none touch-pan-y"
+      style={{
+        transform: flyOut
+          ? flyTransform
+          : `translateX(${offsetX}px) rotate(${rotation}deg)`,
+        transition: flyOut || offsetX === 0 ? "transform 0.4s ease-out, opacity 0.3s" : "none",
+        opacity: flyOut ? 0 : 1,
+        cursor: actionInProgress ? "default" : "grab",
+      }}
+    >
+      {/* Swipe Indicator Overlays */}
+      {swipeDir === "right" && (
+        <div
+          className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none"
+          style={{ opacity: swipeOpacity }}
+        >
+          <div className="bg-success/20 backdrop-blur-sm absolute inset-0" />
+          <span className="text-success text-6xl font-black rotate-[-15deg] border-4 border-success px-6 py-2 rounded-xl">
+            LIKE
+          </span>
+        </div>
+      )}
+      {swipeDir === "left" && (
+        <div
+          className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none"
+          style={{ opacity: swipeOpacity }}
+        >
+          <div className="bg-error/20 backdrop-blur-sm absolute inset-0" />
+          <span className="text-error text-6xl font-black rotate-[15deg] border-4 border-error px-6 py-2 rounded-xl">
+            PASS
+          </span>
+        </div>
+      )}
 
       {/* IMAGE */}
       <img
         src={user.photoUrl || "/default-avatar.png"}
         alt={user.name}
         className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+        draggable="false"
+        loading="lazy"
       />
 
       {/* GRADIENT OVERLAY */}
@@ -48,7 +169,8 @@ const UserCard = ({ user, onNext }) => {
       <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-6 z-20 px-6">
         <button
           onClick={() => handleAction("ignored")}
-          className="btn btn-circle btn-lg bg-base-100/10 backdrop-blur-md border border-white/20 text-error hover:bg-error hover:border-error hover:text-white transition-all shadow-lg hover:shadow-error/30"
+          disabled={actionInProgress}
+          className="btn btn-circle btn-lg bg-base-100/10 backdrop-blur-md border border-white/20 text-error hover:bg-error hover:border-error hover:text-white transition-all shadow-lg hover:shadow-error/30 disabled:opacity-50"
           aria-label="Pass"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-8 h-8">
@@ -58,7 +180,8 @@ const UserCard = ({ user, onNext }) => {
 
         <button
           onClick={() => handleAction("interested")}
-          className="btn btn-circle btn-lg bg-base-100/10 backdrop-blur-md border border-white/20 text-success hover:bg-success hover:border-success hover:text-white transition-all shadow-lg hover:shadow-success/30"
+          disabled={actionInProgress}
+          className="btn btn-circle btn-lg bg-base-100/10 backdrop-blur-md border border-white/20 text-success hover:bg-success hover:border-success hover:text-white transition-all shadow-lg hover:shadow-success/30 disabled:opacity-50"
           aria-label="Connect"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-8 h-8">

@@ -98,7 +98,7 @@ const EditProfile = () => {
               <div className="relative group cursor-pointer w-28 h-28">
                 <div className={`w-28 h-28 rounded-full overflow-hidden border-4 border-base-200 shadow-xl ${uploading ? 'animate-pulse ring-4 ring-primary/50' : ''}`}>
                   <img
-                    src={photoUrl || "https://via.placeholder.com/150"}
+                    src={photoUrl || "/default-avatar.svg"}
                     alt="Profile"
                     className="w-full h-full object-cover"
                   />

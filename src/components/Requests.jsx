@@ -3,18 +3,25 @@ import { BASE_URL } from '../utils/constants'
 import { useDispatch, useSelector } from 'react-redux'
 import { addRequest, removeRequest } from '../utils/requestSlice'
 import { useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
+import { CardGridSkeleton } from './SkeletonCard'
+import usePageTitle from '../hooks/usePageTitle'
 
 const Requests = () => {
   const dispatch = useDispatch();
   const requests = useSelector((state) => state.requests);
   const [loading, setLoading] = useState(true);
 
+  usePageTitle("Requests");
+
   const handleAccept = async (userId, requestId) => {
     try {
       await axios.post(BASE_URL + '/request/review/accepted/' + requestId, { status: "accepted" }, { withCredentials: true });
       dispatch(removeRequest(userId));
+      toast.success('Request accepted! 🎉', { position: 'bottom-center' });
     } catch (err) {
       console.error(err);
+      toast.error('Failed to accept request', { position: 'bottom-center' });
     }
   }
 
@@ -22,8 +29,10 @@ const Requests = () => {
     try {
       await axios.post(BASE_URL + '/request/review/rejected/' + requestId, { status: "rejected" }, { withCredentials: true });
       dispatch(removeRequest(userId));
+      toast.success('Request rejected', { position: 'bottom-center' });
     } catch (err) {
       console.error(err);
+      toast.error('Failed to reject request', { position: 'bottom-center' });
     }
   }
 
@@ -46,8 +55,12 @@ const Requests = () => {
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-base-300">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
+      <div className="min-h-[calc(100vh-4rem)] bg-base-300 p-4 md:p-8 relative overflow-hidden">
+        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]"></div>
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="h-10 bg-base-200 rounded-lg w-64 mx-auto mb-10 animate-pulse"></div>
+          <CardGridSkeleton count={4} />
+        </div>
       </div>
     );
   }
@@ -77,6 +90,9 @@ const Requests = () => {
       <div className="max-w-7xl mx-auto relative z-10">
         <h1 className="text-3xl md:text-4xl font-bold text-center mb-10 bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary drop-shadow-sm">
           Friend Requests
+          {requests.length > 0 && (
+            <span className="ml-3 badge badge-primary badge-lg text-sm">{requests.length}</span>
+          )}
         </h1>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -88,9 +104,10 @@ const Requests = () => {
               <div className="relative mb-4">
                 <div className="w-24 h-24 rounded-full p-[2px] bg-gradient-to-tr from-primary to-secondary">
                   <img
-                    src={request.fromUserId.photoUrl || "https://via.placeholder.com/150"}
+                    src={request.fromUserId.photoUrl || "/default-avatar.svg"}
                     alt="Profile"
                     className="w-full h-full rounded-full object-cover border-2 border-base-100"
+                    loading="lazy"
                   />
                 </div>
               </div>

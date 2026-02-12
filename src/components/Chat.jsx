@@ -6,6 +6,7 @@ import axios from "axios";
 import { BASE_URL, CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "../utils/constants";
 import { addConnection } from "../utils/connectionSlice";
 import CallModal from "./CallModal";
+import { playMessageSound } from "../utils/sounds";
 
 const Chat = () => {
     const { id } = useParams();
@@ -87,9 +88,13 @@ const Chat = () => {
         });
 
         socket.on("chatHistory", setMessages);
-        socket.on("receiveMessage", (msg) =>
-            setMessages((prev) => [...prev, msg])
-        );
+        socket.on("receiveMessage", (msg) => {
+            // Play notification sound for messages from others
+            if (msg.sender !== userId) {
+                playMessageSound();
+            }
+            setMessages((prev) => [...prev, msg]);
+        });
 
         socket.on("userTyping", () => setIsTyping(true));
         socket.on("userStopTyping", () => setIsTyping(false));
@@ -539,7 +544,7 @@ const Chat = () => {
 // Helper for profile photo to handle missing url or data
 const viewProfilePhoto = (user, isMe) => {
     if (isMe && user?.photoUrl) return user.photoUrl;
-    return "https://via.placeholder.com/150";
+    return "/default-avatar.svg";
 }
 
 export default Chat;
